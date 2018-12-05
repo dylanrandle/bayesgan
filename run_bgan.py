@@ -15,7 +15,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 
 from bgan_util import AttributeDict
-from bgan_util import print_images, MnistDataset, CelebDataset, Cifar10, SVHN, ImageNet
+from bgan_util import print_images, MnistDataset, CelebDataset, Cifar10, SVHN, ImageNet, FourShapes
 from bgan import BDCGAN
 
 
@@ -287,6 +287,8 @@ if __name__ == "__main__":
     elif "imagenet" in args.dataset:
         num_classes = int(args.dataset.split("_")[-1])
         dataset = ImageNet(imagenet_path, num_classes)
+    elif args.dataset == 'fourshapes':
+        datasets = FourShapes()
     else:
         raise RuntimeError("invalid dataset %s" % args.dataset)
 

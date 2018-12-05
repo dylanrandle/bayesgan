@@ -1,4 +1,4 @@
-import os 
+import os
 import glob
 import numpy as np
 import six
@@ -21,8 +21,8 @@ class AttributeDict(dict):
         self[attr] = value
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
-        
-        
+
+
 def print_images(sampled_images, label, index, directory, save_all_samples=False):
     import matplotlib as mpl
     mpl.use('Agg') # for server side
@@ -34,7 +34,7 @@ def print_images(sampled_images, label, index, directory, save_all_samples=False
             img_out[:, :, i] = 255.* ((img[:, :, i] + 1.) / 2.0)
         img_out = img_out.astype(np.uint8)
         return img_out
-        
+
 
     if type(sampled_images) == np.ndarray:
         N, h, w, cdim = sampled_images.shape
@@ -45,7 +45,7 @@ def print_images(sampled_images, label, index, directory, save_all_samples=False
         idxs = np.arange(5*5).reshape((5,5))
         N, h, w, cdim = sampled_images.shape
 
-        
+
     fig, axarr = plt.subplots(5, 5)
     for i in range(5):
         for j in range(5):
@@ -66,17 +66,17 @@ def print_images(sampled_images, label, index, directory, save_all_samples=False
     if "raw" not in label.lower() and save_all_samples:
         np.savez_compressed(os.path.join(directory, "samples_%s_%i.npz" % (label, index)),
                             samples=sampled_images)
-                            
 
-            
+
+
 class FigPrinter():
-    
+
     def __init__(self, subplot_args):
         import matplotlib as mpl
         mpl.use('Agg') # guarantee work on servers
         import matplotlib.pyplot as plt
         self.fig, self.ax_arr = plt.subplots(*subplot_args)
-        
+
     def print_to_file(self, file_name, close_on_exit=True):
         import matplotlib as mpl
         mpl.use('Agg') # guarantee work on servers
@@ -84,14 +84,14 @@ class FigPrinter():
         self.fig.savefig(file_name, bbox_inches='tight')
         if close_on_exit:
             plt.close("all")
-        
+
 
 class SynthDataset():
-    
+
     def __init__(self, x_dim=100, num_clusters=10, seed=1234):
-        
+
         np.random.seed(seed)
-        
+
         self.x_dim = x_dim
         self.N = 10000
         self.true_z_dim = 2
@@ -106,8 +106,8 @@ class SynthDataset():
         X_raw = np.concatenate(self.Xs)
         self.X = (X_raw - X_raw.mean(0)) / (X_raw.std(0))
         print self.X.shape
-        
-        
+
+
     def next_batch(self, batch_size):
 
         rand_idx = np.random.choice(range(self.N), size=(batch_size,), replace=False)
@@ -115,19 +115,19 @@ class SynthDataset():
 
 
 
-        
+
 class MnistDataset():
-    
+
     def __init__(self, data_dir):
-        
+
         from tensorflow.examples.tutorials.mnist import input_data
         self.mnist = input_data.read_data_sets(data_dir, one_hot=True)
         self.x_dim = [28, 28, 1]
         self.num_classes = 10
         self.dataset_size = self.mnist.train.images.shape[0]
-        
+
     def next_batch(self, batch_size, class_id=None):
-        
+
         if class_id is None:
             image_batch, labels = self.mnist.train.next_batch(batch_size)
             new_image_batch = np.array([(image_batch[n]*2. - 1.).reshape((28, 28, 1))
@@ -151,7 +151,7 @@ class MnistDataset():
             return class_id_batch[:batch_size], labels
 
     def test_batch(self, batch_size):
-        
+
         image_batch, labels = self.mnist.test.next_batch(batch_size)
         new_image_batch = np.array([(image_batch[n]*2. - 1.).reshape((28, 28, 1))
                                         for n in range(image_batch.shape[0])])
@@ -165,17 +165,17 @@ class MnistDataset():
         return test_images, test_labels
 
 
-        
-        
+
+
 class CelebDataset():
-        
+
     def __init__(self, path):
         self.path = path
         self.x_dim = [32, 32, 3]
 
         with open(os.path.join(path, "Anno/list_attr_celeba.txt")) as af:
             lines = [line.strip() for line in af.readlines()]
-    
+
         self.attr_dict = {}
         for bb_idx, bb_line in enumerate(lines):
             if bb_idx < 2:
@@ -184,7 +184,7 @@ class CelebDataset():
             self.attr_dict[info[0]] = [int(tk) for tk in info[1:]]
 
         self.salient_features = [9, 15, 20, 39] # blond, glasses, male, young
-        
+
         self.num_classes = 2**len(self.salient_features)
 
         self.num_train = 75000
@@ -200,10 +200,10 @@ class CelebDataset():
             if features[sf] == 1:
                 class_id += 2**sfi
         return class_id
-            
+
 
     def get_batch(self, rand_idx):
-        
+
         new_image_batch = []; new_lbl_batch = []
         for ridx in rand_idx:
             orig_name = "%06d.jpg" % (ridx + 1)
@@ -219,14 +219,14 @@ class CelebDataset():
                 Xnorm[:, :, i] = Xnorm[:, :, i] * 2. - 1.
             #Xg[:, :, 0] = 0.2126 * Xnorm[:, :, 0] + 0.7152 * Xnorm[:, :, 1] + 0.0722 * Xnorm[:, :, 2]
             new_image_batch.append(Xnorm)
-            #new_image_batch.append(Xg)            
+            #new_image_batch.append(Xg)
 
             y = self.get_class_id(orig_name)
             new_lbl_batch.append(y)
 
         return np.array(new_image_batch), one_hot_encoded(np.array(new_lbl_batch), self.num_classes)
 
-    
+
     def next_batch(self, batch_size, class_id=None):
         got_batch = False
         while not got_batch:
@@ -234,9 +234,9 @@ class CelebDataset():
             X_batch, y_batch = self.get_batch(rand_idx)
             if X_batch.shape[0] >= batch_size:
                 got_batch = True
-                
+
         return X_batch[:batch_size], y_batch[:batch_size]
-    
+
 
     def test_batch(self, batch_size):
         got_batch = False
@@ -246,7 +246,7 @@ class CelebDataset():
             X_batch, y_batch = self.get_batch(rand_idx)
             if X_batch.shape[0] >= batch_size:
                 got_batch = True
-                
+
         return X_batch[:batch_size], y_batch[:batch_size]
 
     def get_test_set(self):
@@ -277,17 +277,17 @@ class SVHN():
         self.x_dim = [32, 32, 3]
         self.num_classes = 10
         self.dataset_size = self.imgs.shape[0]
-        
+
         if subsample is not None:
-            rand_idx = np.random.choice(range(self.imgs.shape[0]), 
-                                        size=(int(self.imgs.shape[0]*subsample),), 
-                                        replace=False)  
+            rand_idx = np.random.choice(range(self.imgs.shape[0]),
+                                        size=(int(self.imgs.shape[0]*subsample),),
+                                        replace=False)
             self.imgs, self.labels = self.imgs[rand_idx], self.labels[rand_idx]
 
     def next_batch(self, batch_size, class_id=None):
-        rand_idx = np.random.choice(range(self.imgs.shape[0]), size=(batch_size,), replace=False)    
+        rand_idx = np.random.choice(range(self.imgs.shape[0]), size=(batch_size,), replace=False)
         return self.imgs[rand_idx], self.labels[rand_idx]
-    
+
 
     def test_batch(self, batch_size):
         rand_idx = np.random.choice(range(self.test_imgs.shape[0]),
@@ -295,12 +295,12 @@ class SVHN():
         return self.test_imgs[rand_idx], self.test_labels[rand_idx]
 
 
-    
+
 def get_imagenet_val(path, x_dim, subsample=True):
-    
+
     dirnames = [dn for dn in os.listdir(os.path.join(path, "val_256")) if dn[0] == "n"]
     assert len(dirnames), "invalid path %s given!" % (path)
-    
+
     val_imgs = []; val_targets = []; class_dict = {}
     for dir_id, dirname in enumerate(dirnames):
         full_dirname = os.path.join(os.path.join(path, "val_256"), dirname)
@@ -315,10 +315,10 @@ def get_imagenet_val(path, x_dim, subsample=True):
             val_imgs.append(X[None, ::4, ::4, :])
             val_targets.append(dir_id)
         class_dict[dirname] = dir_id
-    
+
     return np.concatenate(val_imgs), np.array(val_targets), class_dict
-          
-    
+
+
 class ImageNet():
 
     def __init__(self, path, num_classes, subsample=None):
@@ -331,10 +331,10 @@ class ImageNet():
         assert max(self.class_dict.values()) == self.num_classes - 1
         self.test_imgs = self.test_images / 255.
         self.test_imgs = self.test_imgs * 2 - 1.
-        
+
         self.test_labels = one_hot_encoded(self.test_labels, self.num_classes)
 
-        
+
     def supervised_batches(self, num_labeled, batch_size):
 
         print "generating list of supervised examples"
@@ -342,7 +342,7 @@ class ImageNet():
         rand_imgs = []
         while len(rand_imgs) < num_labeled:
             rdir_name = np.random.choice(dirnames)
-            rdir = os.path.join(os.path.join(self.path, "train_256"), 
+            rdir = os.path.join(os.path.join(self.path, "train_256"),
                                 rdir_name)
             im_names = glob.glob(os.path.join(rdir, "*.JPEG"))
             assert len(im_names), "no images in dir %s, fix data" % rdir
@@ -369,7 +369,7 @@ class ImageNet():
 
             yield (batch_imgs, one_hot_encoded(np.array(batch_lbls), self.num_classes))
 
-            
+
     def next_batch(self, batch_size, class_id=None):
 
         dirnames = [dn for dn in os.listdir(os.path.join(self.path, "train_256")) if dn[0] == "n"]
@@ -377,7 +377,7 @@ class ImageNet():
 
         batch_imgs, batch_lbls, rand_imgs = [], [], []
         while len(batch_imgs) < batch_size:
-            rdir = os.path.join(os.path.join(self.path, "train_256"), 
+            rdir = os.path.join(os.path.join(self.path, "train_256"),
                                 rdir_name)
             im_names = glob.glob(os.path.join(rdir, "*.JPEG"))
             assert len(im_names), "no images in dir %s, fix data" % rdir
@@ -389,22 +389,22 @@ class ImageNet():
                 batch_imgs.append(X[None, ::4, ::4, :])
                 batch_lbls.append(self.class_dict[rdir_name])
                 rand_imgs.append(rand_im_name)
-        
+
         self.batch_images = np.concatenate(batch_imgs)
         self.batch_imgs = self.batch_images / 255.
         self.batch_imgs = self.batch_imgs * 2 - 1.
-        
+
         self.batch_lbls = one_hot_encoded(np.array(batch_lbls),
                                           self.num_classes)
 
         return self.batch_imgs, self.batch_lbls
-    
 
-    
+
+
 class Cifar10():
-    
+
     def __init__(self, path):
-    
+
 
         def _convert_images(raw):
             """
@@ -442,41 +442,64 @@ class Cifar10():
             names = [x.decode('utf-8') for x in raw]
 
             return names
-                
-        
+
+
         meta_name = os.path.join(path, 'batches.meta')
         self.class_names = process_meta(meta_name)
         self.num_classes = len(self.class_names)
-        
+
         self.imgs = []
-        self.labels = [] 
+        self.labels = []
         for i in xrange(1, 6):
             batch_name = os.path.join(path, 'data_batch_%i' % i)
             print batch_name
             images, labels = process_batch(batch_name)
             self.imgs.append(images)
             self.labels.append(labels)
-            
+
         self.imgs = np.concatenate(self.imgs)
         self.labels = one_hot_encoded(np.concatenate(self.labels), len(self.class_names))
 
         self.dataset_size = self.imgs.shape[0]
-            
+
         test_batch_name = os.path.join(path, 'test_batch')
         print test_batch_name
         self.test_imgs, self.test_labels = process_batch(test_batch_name)
         self.test_labels = one_hot_encoded(self.test_labels, len(self.class_names))
-                
+
         self.x_dim = [32, 32, 3]
-        
+
 
     def next_batch(self, batch_size, class_id=None):
-        rand_idx = np.random.choice(range(self.imgs.shape[0]), size=(batch_size,), replace=False)    
+        rand_idx = np.random.choice(range(self.imgs.shape[0]), size=(batch_size,), replace=False)
         return self.imgs[rand_idx], self.labels[rand_idx]
-    
+
 
     def test_batch(self, batch_size):
         rand_idx = np.random.choice(range(self.test_imgs.shape[0]),
                                     size=(batch_size,), replace=False)
         return self.test_imgs[rand_idx], self.test_labels[rand_idx]
-    
+
+class FourShapes():
+    def __init__(self):
+        self.imgs = np.load('datasets/four_shapes/train_shapes.npy')
+        self.test_imgs = np.load('datasets/four_shapes/test_shapes.npy')
+        self.labels = np.load('datasets/four_shapes/train_labels.npy')
+        self.test_labels = np.load('datasets/four_shapes/test_labels.npy')
+        self.labels = one_hot_encoded(self.labels, 4)
+        self.test_labels = one_hot_encoded(self.test_labels, 4)
+        self.x_dim = [200, 200, 1] # img dims
+        self.num_classes = 4
+
+    @staticmethod
+    def get_batch(batch_size, x, y):
+        """Returns a batch from the given arrays.
+        """
+        idx = np.random.choice(range(x.shape[0]), size=(batch_size,), replace=False)
+        return x[idx], y[idx]
+
+    def next_batch(self, batch_size, class_id=None):
+        return self.get_batch(batch_size, self.imgs, self.labels)
+
+    def test_batch(self, batch_size):
+        return self.get_batch(batch_size, self.test_imgs, self.test_labels)
