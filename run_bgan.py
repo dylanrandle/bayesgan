@@ -287,7 +287,7 @@ if __name__ == "__main__":
     elif "imagenet" in args.dataset:
         num_classes = int(args.dataset.split("_")[-1])
         dataset = ImageNet(imagenet_path, num_classes)
-    elif args.dataset == 'fourshapes':
+    elif args.dataset == 'four_shapes':
         datasets = FourShapes()
     else:
         raise RuntimeError("invalid dataset %s" % args.dataset)
