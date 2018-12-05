@@ -490,6 +490,7 @@ class FourShapes():
         self.test_labels = one_hot_encoded(self.test_labels, 4)
         self.x_dim = [200, 200, 1] # img dims
         self.num_classes = 4
+        self.dataset_size = self.imgs.shape[0]
 
     @staticmethod
     def get_batch(batch_size, x, y):
