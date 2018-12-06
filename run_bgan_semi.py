@@ -48,7 +48,7 @@ def get_supervised_batches(dataset, size, batch_size, class_ids):
         lbls_ = sampled_labels[rand_idx]
         rand_idx = np.random.choice(range(imgs_.shape[0]), batch_size, replace=True)
         imgs_ = imgs_[rand_idx]
-        lbls_ = lbls_[rand_idx] 
+        lbls_ = lbls_[rand_idx]
         return imgs_, lbls_
 
     labeled_image_batches, lblss = [], []
@@ -113,15 +113,15 @@ def get_test_accuracy(session, dcgan, all_test_img_batches, all_test_lbls):
 
     sup_acc = (100. * np.sum(np.argmax(test_s_probs, 1) == np.argmax(test_lbls, 1)))\
               / test_lbls.shape[0]
-        
+
     semi_sup_acc = (100. * np.sum(np.argmax(test_d_probs, 1) == np.argmax(test_lbls, 1)))\
               / test_lbls.shape[0]
-        
+
     print "Sup acc: %.5f" % (sup_acc)
     print "Semi-sup acc: %.5f" % (semi_sup_acc)
 
     return sup_acc, semi_sup_acc
-    
+
 
 
 def b_dcgan(dataset, args):
@@ -136,15 +136,15 @@ def b_dcgan(dataset, args):
 
     dcgan = BDCGAN_Semi(x_dim, z_dim, dataset_size, batch_size=batch_size, J=args.J, J_d=args.J_d, M=args.M,
                         num_layers=args.num_layers,
-                        lr=args.lr, optimizer=args.optimizer, gf_dim=args.gf_dim, 
+                        lr=args.lr, optimizer=args.optimizer, gf_dim=args.gf_dim,
                         df_dim=args.df_dim, ml=(args.ml and args.J==1 and args.M==1 and args.J_d==1),
                         num_classes=dataset.num_classes)
-    
+
     print "Starting session"
     session.run(tf.global_variables_initializer())
 
     print "Starting training loop"
-        
+
     num_train_iter = args.train_iter
 
     if hasattr(dataset, "supervised_batches"):
@@ -162,7 +162,7 @@ def b_dcgan(dataset, args):
     base_learning_rate = args.lr # for now we use same learning rate for Ds and Gs
     lr_decay_rate = args.lr_decay
     num_disc = args.J_d
-    
+
     for train_iter in range(num_train_iter):
 
         if train_iter == 5000:
@@ -174,7 +174,7 @@ def b_dcgan(dataset, args):
         learning_rate = base_learning_rate * np.exp(-lr_decay_rate *
                                                     min(1.0, (train_iter*batch_size)/float(dataset_size)))
 
-        image_batch, _ = dataset.next_batch(batch_size, class_id=None)       
+        image_batch, _ = dataset.next_batch(batch_size, class_id=None)
         labeled_image_batch, labels = supervised_batches.next()
 
         ### compute disc losses
@@ -204,7 +204,7 @@ def b_dcgan(dataset, args):
             print "Iter %i" % train_iter
             print "Disc losses = %s" % (", ".join(["%.2f" % dl for dl in d_losses]))
             print "Gen losses = %s" % (", ".join(["%.2f" % gl for gl in g_losses]))
-            
+
             # get test set performance on real labels only for both GAN-based classifier and standard one
             s_acc, ss_acc = get_test_accuracy(session, dcgan, test_image_batches, test_label_batches)
             print "Sup classification acc: %.2f" % (s_acc)
@@ -220,7 +220,7 @@ def b_dcgan(dataset, args):
 
             with open(os.path.join(args.out_dir, 'results_%i.json' % train_iter), 'w') as fp:
                 json.dump(results, fp)
-            
+
             if args.save_samples:
                 for zi in xrange(dcgan.num_gen):
                     _imgs, _ps = [], []
@@ -243,10 +243,10 @@ def b_dcgan(dataset, args):
                 np.savez_compressed(os.path.join(args.out_dir,
                                                  "weights_%i.npz" % train_iter),
                                     **var_dict)
-            
+
 
             print "done"
-        
+
 
 
 if __name__ == "__main__":
@@ -262,22 +262,22 @@ if __name__ == "__main__":
                         type=int,
                         default=100,
                         help="every n_save iteration save samples and weights")
-    
+
     parser.add_argument('--z_dim',
                         type=int,
                         default=100,
                         help='dim of z for generator')
-    
+
     parser.add_argument('--gf_dim',
                         type=int,
                         default=64,
                         help='num of gen features')
-    
+
     parser.add_argument('--df_dim',
                         type=int,
                         default=96,
                         help='num of disc features')
-    
+
     parser.add_argument('--data_path',
                         type=str,
                         required=True,
@@ -342,7 +342,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_samples',
                         action="store_true",
                         help="wether to save generated samples")
-    
+
     parser.add_argument('--save_weights',
                         action="store_true",
                         help="wether to save weights")
@@ -351,7 +351,7 @@ if __name__ == "__main__":
                         type=int,
                         default=2222,
                         help="random seed")
-    
+
     parser.add_argument('--lr',
                         type=float,
                         default=0.005,
@@ -367,8 +367,15 @@ if __name__ == "__main__":
                         default="sgd",
                         help="optimizer --- 'adam' or 'sgd'")
 
-    
+    parser.add_argument('--gpu_id',
+                        type=str,
+                        default="0",
+                        help="which gpu to use")
+
     args = parser.parse_args()
+
+    # set gpu
+    os.environ['CUDA_VISIBLE_DEVICES']=args.gpu_id
 
     # set seeds
     np.random.seed(args.random_seed)
@@ -384,7 +391,7 @@ if __name__ == "__main__":
     with open(os.path.join(args.out_dir, "hypers.txt"), "w") as hf:
         hf.write("Hyper settings:\n")
         hf.write("%s\n" % (pprint.pformat(args.__dict__)))
-        
+
     celeb_path = os.path.join(args.data_path, "celebA")
     cifar_path = os.path.join(args.data_path, "cifar-10-batches-py")
     svhn_path = os.path.join(args.data_path, "svhn")

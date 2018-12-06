@@ -251,8 +251,15 @@ if __name__ == "__main__":
                         default="sgd",
                         help="optimizer --- 'adam' or 'sgd'")
 
+    parser.add_argument('--gpu_id',
+                        type=str,
+                        default="0",
+                        help="which gpu to use")
 
     args = parser.parse_args()
+
+    # set gpu
+    os.environ['CUDA_VISIBLE_DEVICES']=args.gpu_id
 
     # set seeds
     np.random.seed(args.random_seed)
